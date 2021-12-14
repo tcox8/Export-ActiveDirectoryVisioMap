@@ -2,8 +2,9 @@
 Exports AD OUs and GPOs to a Visio Map
 
 # Requirements
-RSAT tools for Active Directory and GPO </br>
-VisioAutomation - https://github.com/saveenr/VisioAutomation  (this module is imported in the script but I wanted to give mention to Saveenr and all his hard work)
+RSAT tools for Active Directory and GPO. </br>
+VisioAutomation - https://github.com/saveenr/VisioAutomation  (this module is imported in the script but I wanted to give mention to Saveenr and all his hard work). </br>
+A working copy of Visio installed.
 
 </br>
 </br>
