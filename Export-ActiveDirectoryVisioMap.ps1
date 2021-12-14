@@ -62,7 +62,7 @@ $OUs = Get-ADOrganizationalUnit -Filter 'Name -like "*"' -Properties Name, Disti
     Where {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
     Sort-Object CanonicalName # | Select -First 50
 
-#Set our first node as the root domain
+#Get our root domain from the current logged on user
 $DNSDomain = $env:USERDNSDOMAIN 
 
 #Gather our shapes from Visio's stencils
