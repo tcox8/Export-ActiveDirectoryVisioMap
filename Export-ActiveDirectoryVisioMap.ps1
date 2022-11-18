@@ -14,7 +14,6 @@
 #
 #############################################################################
 
-
 #Import the modules
 Try 
     {   
@@ -36,11 +35,12 @@ Catch
     }
 Try 
     {   
-        Import-Module Visio -scope CurrentUser -ErrorAction Stop
+        #Don't forget to install the module
+        Import-Module Visio 
     }
 Catch 
     {
-        Write-Host "Error! Could not import Visio module!"
+        Write-Host "Error! Could not import Visio module! You may need to install it Install-Module Visio"
         break
     }
 
@@ -65,7 +65,7 @@ $OUs = Get-ADOrganizationalUnit -Filter 'Name -like "*"' -Properties Name, Disti
 #Get our root domain from the current logged on user
 $DNSDomain = $env:USERDNSDOMAIN 
 
-#Gather our shapes from Visio's stencils
+#Gather our shape from Visio's stencils
 $ADO_u = Open-VisioDocument "ADO_U.vss"
 $connectors = Open-VisioDocument "Connectors.vss"
 $masterOU = Get-VisioMaster "Organizational Unit" -Document $ADO_u
@@ -74,7 +74,8 @@ $masterDomain = Get-VisioMaster "Domain" -Document $ADO_u
 $masterGPO = Get-VisioMaster "Policy" -Document $ADO_u
 
 #Create our first shape. This is the root domain node
-$n0 = New-VisioShape -Masters $MasterDomain -Points 1.0,1.0
+$n0points = New-VisioPoint 1.0 1.0
+$n0 = New-VisioShape -master $MasterDomain -Position $n0points
 #Set shape properties
 $n0.Text = $DNSDomain
 $n0.Name = "n" + $DNSDomain
@@ -95,19 +96,19 @@ ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[")
         #declare what we'll call the gpo shape 
         $shapename = "g" + $gpoCount 
         #Create the GPO shape
-        $shapeGPO = New-VisioShape -Masters $MasterGPO -Points 1.0,1.0 
+        $shapeGPO = New-VisioShape -master $MasterGPO -position $n0points
         #Set the shape properties
         $ShapeGPO.Text = $GPO.DisplayName
         $ShapeGPO.Name = $shapename
         #Set the shape's custom properties
         $GUID = "{" + $gpo.id.guid + "}"
-        If ($GPO.DisplayName) {Set-VisioCustomProperty -Shapes $ShapeGPO -Name "GPOName" -Value $GPO.DisplayName}
-        If ($GPO.Description) {Set-VisioCustomProperty -Shapes $ShapeGPO -Name "Description" -Value $GPO.Description}
-        If ($GPO.ID.Guid) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "GUID" -Value $GUID}
-        If ($GPO.GPOStatus) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "Status" -Value $GPO.GpoStatus.ToString()}
-        If ($GPO.CreationTime) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "CreationTime" -Value $GPO.CreationTime.ToString()}
-        If ($GPO.ModificationTime) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "ModifiedTime" -Value $GPO.ModificationTime.ToString()}
-        If ($GPO.WmiFilter) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "WMIFilterName" -Value $GPO.WMIFilter.Name}
+        If ($GPO.DisplayName) {Set-VisioCustomProperty -Shape $ShapeGPO -Name "GPOName" -Value $GPO.DisplayName}
+        If ($GPO.Description) {Set-VisioCustomProperty -Shape $ShapeGPO -Name "Description" -Value $GPO.Description}
+        If ($GPO.ID.Guid) {Set-VisioCustomProperty -Shape $shapeGPO -Name "GUID" -Value $GUID}
+        If ($GPO.GPOStatus) {Set-VisioCustomProperty -Shape $shapeGPO -Name "Status" -Value $GPO.GpoStatus.ToString()}
+        If ($GPO.CreationTime) {Set-VisioCustomProperty -Shape $shapeGPO -Name "CreationTime" -Value $GPO.CreationTime.ToString()}
+        If ($GPO.ModificationTime) {Set-VisioCustomProperty -Shape $shapeGPO -Name "ModifiedTime" -Value $GPO.ModificationTime.ToString()}
+        If ($GPO.WmiFilter) {Set-VisioCustomProperty -Shape $shapeGPO -Name "WMIFilterName" -Value $GPO.WMIFilter.Name}
         #Create the shape's connections
         $con = Connect-VisioShape -From $n0 -To $shapeGPO -Master $connector 
         #Set the connections custom properties
@@ -121,7 +122,7 @@ ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[")
         $con_cells.LineBeginArrow = "4"
         $con_cells.CharColor = "rgb(0,175,240)"
         #Set the shape properties
-        Set-VisioShapeCells -Cells $con_cells -Shapes $con     
+        Set-VisioShapeCells -Cells $con_cells -Shape $con     
     }
 
 
@@ -146,15 +147,15 @@ ForEach ($ou in $OUs)
                 #declare what we'll call the shape
                 $shapename = "n" + $OUConName
                 #Create the new shape
-                $shape = New-VisioShape -Masters $MasterOU -Points 1.0,1.0
+                $shape = New-VisioShape -Master $MasterOU -position $n0points
                 #Set the shape details
                 $Shape.Text = $OUName
                 $Shape.Name = $shapename
                 
                 #Set custom properties of the shape
-                Set-VisioCustomProperty -Shapes $shape -Name "OU_Name" -Value $OU.Name
-                Set-VisioCustomProperty -Shapes $shape -Name "DistinguishedName" -Value $OU.DistinguishedName
-                Set-VisioCustomProperty -Shapes $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
+                Set-VisioCustomProperty -Shape $shape -Name "OU_Name" -Value $OU.Name
+                Set-VisioCustomProperty -Shape $shape -Name "DistinguishedName" -Value $OU.DistinguishedName
+                Set-VisioCustomProperty -Shape $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
                 
                 #Connect the shape to the root domain shape
                 Connect-VisioShape -From $n0 -To $shape -Master $connector
@@ -167,20 +168,20 @@ ForEach ($ou in $OUs)
                 $prevOUName = "n" + $nameRecombined
 
                 #Get the previous shape from Visio based on the name
-                $prevOUshape = Get-VisioShape * | Where {$_.Nameu -eq $prevOUName}
+                $prevOUshape = Get-VisioShape -name * | Where {$_.Nameu -eq $prevOUName}
 
                 #Set the name of the new shape
                 $shapename = "n" + $OUConName
                 #Create the new shape
-                $shape = New-VisioShape -Masters $MasterOU -Points 1.0,1.0
+                $shape = New-VisioShape -Master $MasterOU -position $n0points
                 #Set the shape properties
                 $Shape.Text = $OUName
                 $Shape.Name = $shapename
 
                 #Set custom properties of the shape
-                Set-VisioCustomProperty -Shapes $shape -Name "OU_Name" -Value $OU.Name
-                Set-VisioCustomProperty -Shapes $shape -Name "DistinguishedName" -Value $OU.DistinguishedName
-                Set-VisioCustomProperty -Shapes $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
+                Set-VisioCustomProperty -shape $shape -Name "OU_Name" -Value $OU.Name
+                Set-VisioCustomProperty -shape $shape -Name "DistinguishedName" -Value $OU.DistinguishedName
+                Set-VisioCustomProperty -shape $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
 
                 #Connect the shape to the previous shape
                 Connect-VisioShape -From $prevOUshape -To $shape -Master $connector
@@ -203,18 +204,18 @@ ForEach ($ou in $OUs)
                         #declare what we'll call the gpo shape 
                         $shapename = "g" + $gpoCount
                         #Create the GPO shape
-                        $shapeGPO = New-VisioShape -Masters $MasterGPO -Points 1.0,1.0
+                        $shapeGPO = New-VisioShape -master $MasterGPO -position $n0points
                         #Set the shape properties
                         $ShapeGPO.Text = $GPO.DisplayName
                         $ShapeGPO.Name = $shapename
                         $GUID = "{" + $gpo.id.guid + "}"
-                        If ($GPO.DisplayName) {Set-VisioCustomProperty -Shapes $ShapeGPO -Name "GPOName" -Value $GPO.DisplayName}
-                        If ($GPO.Description) {Set-VisioCustomProperty -Shapes $ShapeGPO -Name "Description" -Value $GPO.Description}
-                        If ($GPO.ID.Guid) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "GUID" -Value $GUID}
-                        If ($GPO.GPOStatus) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "Status" -Value $GPO.GpoStatus.ToString()}
-                        If ($GPO.CreationTime) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "CreationTime" -Value $GPO.CreationTime.ToString()}
-                        If ($GPO.ModificationTime) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "ModifiedTime" -Value $GPO.ModificationTime.ToString()}
-                        If ($GPO.WmiFilter) {Set-VisioCustomProperty -Shapes $shapeGPO -Name "WMIFilterName" -Value $GPO.WMIFilter.Name}
+                        If ($GPO.DisplayName) {Set-VisioCustomProperty -shape $ShapeGPO -Name "GPOName" -Value $GPO.DisplayName}
+                        If ($GPO.Description) {Set-VisioCustomProperty -shape $ShapeGPO -Name "Description" -Value $GPO.Description}
+                        If ($GPO.ID.Guid) {Set-VisioCustomProperty -shape $shapeGPO -Name "GUID" -Value $GUID}
+                        If ($GPO.GPOStatus) {Set-VisioCustomProperty -shape $shapeGPO -Name "Status" -Value $GPO.GpoStatus.ToString()}
+                        If ($GPO.CreationTime) {Set-VisioCustomProperty -shape $shapeGPO -Name "CreationTime" -Value $GPO.CreationTime.ToString()}
+                        If ($GPO.ModificationTime) {Set-VisioCustomProperty -shape $shapeGPO -Name "ModifiedTime" -Value $GPO.ModificationTime.ToString()}
+                        If ($GPO.WmiFilter) {Set-VisioCustomProperty -shape $shapeGPO -Name "WMIFilterName" -Value $GPO.WMIFilter.Name}
 
                         #Create the shape's connections
                         $con = Connect-VisioShape -From $shape -To $shapeGPO -Master $connector
@@ -228,7 +229,7 @@ ForEach ($ou in $OUs)
                         $con_cells.LineBeginArrow = "4"
                         $con_cells.CharColor = "rgb(0,175,240)"
                         #Set the shape properties
-                        Set-VisioShapeCells -Cells $con_cells -Shapes $con                      
+                        Set-VisioShapeCells -Cells $con_cells -shape $con                      
                     }
             }
     }
@@ -249,17 +250,17 @@ Format-VisioPage -LayoutStyle $ls
 #Change the page's size to match the new data
 Format-VisioPage -FitContents -BorderWidth 1.0 -BorderHeight 1.0
 
-#This section is to set text for the GPO shapes based on the length of the line. We had to move the shapes around first before we could run this part.
+#This section is to set text for the GPO shape based on the length of the line. We had to move the shape around first before we could run this part.
 #Create a new Shape Cell Object
 $con_cells = New-VisioShapeCells
 #Set the location of the text based on the length of the line
 $con_cells.TextFormPinX = "=POINTALONGPATH(Geometry1.Path,1)"
 $con_cells.TextFormPinY = "=POINTALONGPATH(Geometry1.Path,.75)"
 #Get all gpo connections
-$gpoShapes = Get-VisioShape * | Where {$_.Nameu -like "gcon*"}
+$gposhape = Get-VisioShape -name * | Where {$_.Nameu -like "gcon*"}
 #Loop through each connection
-ForEach($shape in $gpoShapes)
+ForEach($shape in $gposhape)
     {
         #Set the shape from the shape cell object
-        Set-VisioShapeCells -Cells $con_cells -Shapes $shape   
+        Set-VisioShapeCells -Cells $con_cells -shape $shape   
     }
