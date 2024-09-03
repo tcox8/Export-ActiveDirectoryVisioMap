@@ -160,7 +160,7 @@ ForEach ($ou in $OUs)
                 Set-VisioCustomProperty -Shape $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
                 
                 #Connect the shape to the root domain shape
-                Connect-VisioShape -From $n0 -To $shape -Master $connector
+                Connect-VisioShape -From $n0 -To $shape -Master $connector | Out-Null
 
             }
         #If it's not the root domain, then do this..
@@ -186,7 +186,7 @@ ForEach ($ou in $OUs)
                 Set-VisioCustomProperty -Shape $shape -Name "Linked_GPOs" -Value $OU.LinkedGroupPolicyObjects.Count
 
                 #Connect the shape to the previous shape
-                Connect-VisioShape -From $prevOUshape -To $shape -Master $connector
+                Connect-VisioShape -From $prevOUshape -To $shape -Master $connector | Out-Null
             }
 
         #If the OU had linked GPOs..
