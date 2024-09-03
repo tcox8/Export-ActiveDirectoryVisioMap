@@ -57,13 +57,14 @@ $nodeCount = 0
 $conCount = 0
 $gpoCount = 0
 
+#Get our root domain from the current logged on user
+$DNSDomain = $env:USERDNSDOMAIN 
+
 #Get all OUs except LostAndFound
-$OUs = Get-ADOrganizationalUnit -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
+$OUs = Get-ADOrganizationalUnit -Server $DNSDomain -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
     Where {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
     Sort-Object CanonicalName # | Select -First 50
 
-#Get our root domain from the current logged on user
-$DNSDomain = $env:USERDNSDOMAIN 
 
 #Gather our shapes from Visio's stencils
 $ADO_u = Open-VisioDocument "ADO_U.vss"
@@ -80,7 +81,7 @@ $n0.Text = $DNSDomain
 $n0.Name = "n" + $DNSDomain
 
 #Get Root Domain linked GPOs and process them accordingly
-$RootGPOs = Get-ADObject -Identity (Get-ADDomain).distinguishedName -Properties name, distinguishedName, gPLink, gPOptions
+$RootGPOs = Get-ADObject -Server $DNSDomain -Identity (Get-ADDomain -Identity $DNSDomain).distinguishedName -Properties name, distinguishedName, gPLink, gPOptions
 #Loop through each root GPO
 ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[")
     {
@@ -90,7 +91,7 @@ ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[")
         #get only the GUID of the gpo
         $gpoGUID = ([Regex]::Match($gpoLink,'{[a-zA-Z0-9]{8}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{12}}')).Value 
         #pull details for the GPO based on the GUID
-        $gpo = Get-GPO -GUID $gpoGUID 
+        $gpo = Get-GPO -GUID $gpoGUID -Domain $DNSDomain
 
         #declare what we'll call the gpo shape 
         $shapename = "g" + $gpoCount 
@@ -198,7 +199,7 @@ ForEach ($ou in $OUs)
                         #get only the GUID of the gpo
                         $gpoGUID = ([Regex]::Match($gpoLink,'{[a-zA-Z0-9]{8}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{12}}')).Value
                         #Create the GPO shape
-                        $gpo = Get-GPO -GUID $gpoGUID
+                        $gpo = Get-GPO -GUID $gpoGUID -Domain $DNSDomain
 
                         #declare what we'll call the gpo shape 
                         $shapename = "g" + $gpoCount
