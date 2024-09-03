@@ -23,24 +23,20 @@
 #Import the modules
 Try {   
     Import-Module ActiveDirectory -ErrorAction Stop
-}
-Catch {
-    Write-Host "Error! Could not import ActiveDirectory module! Please make sure you are running this as an Administrator and that RSAT tools are installed!"
-    break
-}
-Try {   
     Import-Module GroupPolicy -ErrorAction Stop
-}
-Catch {
-    Write-Host "Error! Could not import GroupPolicy module! PLease make sure you are running this as an Administrator and that RSAT tools are installed!"
-    break
-}
-Try {   
     Import-Module Visio -ErrorAction Stop
 }
 Catch {
-    Write-Host "Error! Could not import Visio module!"
-    break
+    Write-Error "Error importing the required modules"
+    if($Error[0].Exception.Message -like "*ActiveDirectory*") {
+        Write-Error "Unable to import the ActiveDirectory module. Please ensure you have RSAT installed"
+    }
+    if($Error[0].Exception.Message -like "*GroupPolicy*") {
+        Write-Error "Unable to import the GroupPolicy module. Please ensure you have RSAT installed"
+    }
+    if($Error[0].Exception.Message -like "*Visio*") {
+        Write-Error "Unable to import the Visio module. Please ensure you have the Visio module installed"
+    }
 }
 
 
