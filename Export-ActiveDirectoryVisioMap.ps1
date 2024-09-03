@@ -1,10 +1,9 @@
 #############################################################################
 # Author  : Tyler Cox
-# Editor  : Kyle Schuler
 #
-# Version : 1.1A
+# Version : 1.0
 # Created : 11/2/2021
-# Modified : 09/03/2024
+# Modified : 
 #
 # Purpose : This script will build an inventory of all GPOs and their links.
 #
@@ -12,8 +11,6 @@
 #               user account with enough privileges 
 #             
 # Change Log: Ver 1.0 - Initial release
-#             Ver 1.1A - Fixed issue for AzureAD Joined Machines
-# 
 #
 #############################################################################
 
