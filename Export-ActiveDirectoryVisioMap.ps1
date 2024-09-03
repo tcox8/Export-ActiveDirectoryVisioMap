@@ -64,7 +64,7 @@ $DNSDomain = $env:USERDNSDOMAIN
 
 #Get all OUs except LostAndFound
 $OUs = Get-ADOrganizationalUnit -Server $DNSDomain -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
-    Where {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
+    Where-Object {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
     Sort-Object CanonicalName # | Select -First 50
 
 
@@ -170,7 +170,7 @@ ForEach ($ou in $OUs)
                 $prevOUName = "n" + $nameRecombined
 
                 #Get the previous shape from Visio based on the name
-                $prevOUshape = Get-VisioShape -Name * | Where {$_.Nameu -eq $prevOUName}
+                $prevOUshape = Get-VisioShape -Name * | Where-Object {$_.Nameu -eq $prevOUName}
 
                 #Set the name of the new shape
                 $shapename = "n" + $OUConName
@@ -259,7 +259,7 @@ $con_cells = New-VisioShapeCells
 $con_cells.TextFormPinX = "=POINTALONGPATH(Geometry1.Path,1)"
 $con_cells.TextFormPinY = "=POINTALONGPATH(Geometry1.Path,.75)"
 #Get all gpo connections
-$gpoShapes = Get-VisioShape -Name * | Where {$_.Nameu -like "gcon*"}
+$gpoShapes = Get-VisioShape -Name * | Where-Object {$_.Nameu -like "gcon*"}
 #Loop through each connection
 ForEach($shape in $gpoShapes)
     {
