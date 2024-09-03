@@ -1,9 +1,10 @@
 #############################################################################
 # Author  : Tyler Cox
+# Editor  : Kyle Schuler
 #
-# Version : 1.0
+# Version : 1.1
 # Created : 11/2/2021
-# Modified : 
+# Modified : 09/03/2024
 #
 # Purpose : This script will build an inventory of all GPOs and their links.
 #
@@ -11,6 +12,10 @@
 #               user account with enough privileges 
 #             
 # Change Log: Ver 1.0 - Initial release
+#             Ver 1.1 - Fixed Visio Cmdlet Parameters,
+#                     - Adjusted for Azure AD joined devices
+#                     - Fixed issue with importing Visio module
+#                     - Reduced output to console
 #
 #############################################################################
 
