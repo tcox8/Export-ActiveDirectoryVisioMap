@@ -36,7 +36,7 @@ Catch
     }
 Try 
     {   
-        Import-Module Visio -scope CurrentUser -ErrorAction Stop
+        Import-Module Visio -ErrorAction Stop
     }
 Catch 
     {
