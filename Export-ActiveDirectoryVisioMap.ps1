@@ -2,7 +2,7 @@
 # Author  : Tyler Cox
 # Editor  : Kyle Schuler
 #
-# Version : 1.2
+# Version : 1.3
 # Created : 11/2/2021
 # Modified : 09/04/2024
 #
@@ -17,6 +17,7 @@
 #                     - Fixed issue with importing Visio module
 #                     - Reduced output to console
 #             Ver 1.2 - Added more error handling and output, refactored, reformatted
+#             Ver 1.3 - Added options for user to include or exclude GPOs, and choose the direction of the layout
 #
 #############################################################################
 

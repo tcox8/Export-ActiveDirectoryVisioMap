@@ -1,7 +1,7 @@
 # Export-ActiveDirectoryVisioMap
 Exports AD OUs and GPOs to a Visio Map
 
-# Version 1.2
+# Version 1.3
 Editor : Kyle Schuler</br>
 Fork of : https://github.com/tcox8/Export-ActiveDirectoryVisioMap
 
@@ -30,4 +30,5 @@ Example GPO:
 # Change Log: 
 Ver 1.0 - Initial release</br>
 Ver 1.1 - Fixed Visio Cmdlet Parameters, Adjusted for Azure AD joined devices, Fixed issue with importing Visio module, Reduced output to console</br>
-Ver 1.2 - Refactored, reformatted, added outputs and more error handling
+Ver 1.2 - Refactored, reformatted, added outputs and more error handling</br>
+Ver 1.3 - Added options for user to include or exclude GPOs, and choose the direction of the layout</br>
