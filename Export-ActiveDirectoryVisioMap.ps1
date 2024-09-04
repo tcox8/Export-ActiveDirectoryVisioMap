@@ -2,9 +2,9 @@
 # Author  : Tyler Cox
 # Editor  : Kyle Schuler
 #
-# Version : 1.1
+# Version : 1.2
 # Created : 11/2/2021
-# Modified : 09/03/2024
+# Modified : 09/04/2024
 #
 # Purpose : This script will build an inventory of all GPOs and their links.
 #
@@ -16,12 +16,15 @@
 #                     - Adjusted for Azure AD joined devices
 #                     - Fixed issue with importing Visio module
 #                     - Reduced output to console
+#             Ver 1.2 - Added more error handling and output, refactored, reformatted
 #
 #############################################################################
 
+Write-Output "Starting up..."
 
 #Import the modules
-Try {   
+Try {
+    Write-Output "Importing the required modules"
     Import-Module ActiveDirectory -ErrorAction Stop
     Import-Module GroupPolicy -ErrorAction Stop
     Import-Module Visio -ErrorAction Stop
@@ -40,14 +43,20 @@ Catch {
 }
 
 
-#Create the Visio Application
-New-VisioApplication
-#Create the Visio Document
-$VisioDoc = New-VisioDocument
-#Create the Visio Page
-$Page = $VisioDoc.Pages[1]
-#Create the Visio Point at 1,1
-$Point_1_1 = New-VisioPoint -X 1.0 -Y 1.0
+try {
+    Write-Output "Creating the Visio Document"
+    #Create the Visio Application
+    New-VisioApplication
+    #Create the Visio Document
+    $VisioDoc = New-VisioDocument
+    #Create the Visio Page
+    $Page = $VisioDoc.Pages[1]
+    #Create the Visio Point at 1,1
+    $Point_1_1 = New-VisioPoint -X 1.0 -Y 1.0
+}
+catch {
+    Write-Error "Error creating the Visio document or page $_"
+}
 
 #Set our counters
 $nodeCount = 0
@@ -57,6 +66,11 @@ $gpoCount = 0
 #Get our root domain from the current logged on user
 $DNSDomain = $env:USERDNSDOMAIN 
 
+if($null -eq $DNSDomain) {
+    Write-Error "Unable to get the DNS Domain. Please ensure you are logged in to a domain joined computer, or have your default domain set"
+}
+
+Write-Output "Getting the OUs from the domain $DNSDomain"
 #Get all OUs except LostAndFound
 $OUs = Get-ADOrganizationalUnit -Server $DNSDomain -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
         Where-Object {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
@@ -77,9 +91,11 @@ $n0 = New-VisioShape -Master $MasterDomain -Position $Point_1_1
 $n0.Text = $DNSDomain
 $n0.Name = "n" + $DNSDomain
 
+Write-Output "Getting the GPOs linked to the root domain $DNSDomain"
 #Get Root Domain linked GPOs and process them accordingly
 $RootGPOs = Get-ADObject -Server $DNSDomain -Identity (Get-ADDomain -Identity $DNSDomain).distinguishedName -Properties name, distinguishedName, gPLink, gPOptions
 #Loop through each root GPO
+Write-Output "Creating the GPO shapes and connecting them to the root domain"
 ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[") {
     #Add to our counters (for naming)
     $gpoCount += 1 
@@ -137,7 +153,7 @@ ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[") {
 
 
 
-
+Write-Output "Creating the OU shapes and connecting them to the root domain"
 #Loop through each OU
 ForEach ($ou in $OUs) {
     #Add to our counters
@@ -253,6 +269,7 @@ ForEach ($ou in $OUs) {
     }
 }
 
+Write-Output "Formatting the Visio Page"
 #Create a new layout object
 $ls = New-Object VisioAutomation.Models.LayoutStyles.hierarchyLayoutStyle
 #set object properties (this is how we format the page)

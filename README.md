@@ -2,7 +2,8 @@
 Exports AD OUs and GPOs to a Visio Map
 
 # Version 1.1
-Editor : Kyle Schuler
+Editor : Kyle Schuler</br>
+Fork of : https://github.com/tcox8/Export-ActiveDirectoryVisioMap
 
 # Requirements
 RSAT tools for Active Directory and GPO. </br>
@@ -28,4 +29,5 @@ Example GPO:
 
 # Change Log: 
 Ver 1.0 - Initial release</br>
-Ver 1.1 - Fixed Visio Cmdlet Parameters, Adjusted for Azure AD joined devices, Fixed issue with importing Visio module, Reduced output to console
+Ver 1.1 - Fixed Visio Cmdlet Parameters, Adjusted for Azure AD joined devices, Fixed issue with importing Visio module, Reduced output to console</br>
+Ver 1.2 - Refactored, reformatted, added outputs and more error handling
