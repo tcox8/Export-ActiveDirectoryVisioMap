@@ -33,12 +33,18 @@ Catch {
     Write-Error "Error importing the required modules"
     if($Error[0].Exception.Message -like "*ActiveDirectory*") {
         Write-Error "Unable to import the ActiveDirectory module. Please ensure you have RSAT installed"
+        Read-Host "Press any key to exit"
+        exit
     }
     if($Error[0].Exception.Message -like "*GroupPolicy*") {
         Write-Error "Unable to import the GroupPolicy module. Please ensure you have RSAT installed"
+        Read-Host "Press any key to exit"
+        exit
     }
     if($Error[0].Exception.Message -like "*Visio*") {
         Write-Error "Unable to import the Visio module. Please ensure you have the Visio module installed"
+        Read-Host "Press any key to exit"
+        exit
     }
 }
 
@@ -56,6 +62,8 @@ try {
 }
 catch {
     Write-Error "Error creating the Visio document or page $_"
+    Read-Host "Press any key to exit"
+    exit
 }
 
 #Set our counters
@@ -68,33 +76,62 @@ $DNSDomain = $env:USERDNSDOMAIN
 
 if($null -eq $DNSDomain) {
     Write-Error "Unable to get the DNS Domain. Please ensure you are logged in to a domain joined computer, or have your default domain set"
+    Read-Host "Press any key to exit"
+    exit
 }
 
 Write-Output "Getting the OUs from the domain $DNSDomain"
 #Get all OUs except LostAndFound
-$OUs = Get-ADOrganizationalUnit -Server $DNSDomain -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
-        Where-Object {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
-        Sort-Object CanonicalName # | Select -First 50
+try {
+    $OUs = Get-ADOrganizationalUnit -Server $DNSDomain -Filter 'Name -like "*"' -Properties Name, DistinguishedName, CanonicalName, LinkedGroupPolicyObjects | `
+            Where-Object {$_.canonicalname -notlike "*LostandFound*"} | Select-Object Name, Canonicalname, DistinguishedName, LinkedGroupPolicyObjects | `
+            Sort-Object CanonicalName # | Select -First 50
+}
+catch {
+    Write-Error "Error getting the OUs from the domain $DNSDomain $_"
+    Read-Host "Press any key to exit"
+    exit
+}
 
+try {
+    #Gather our shapes from Visio's stencils
+    $ADO_u = Open-VisioDocument "ADO_U.vss"
+    $connectors = Open-VisioDocument "Connectors.vss"
+    $masterOU = Get-VisioMaster "Organizational Unit" -Document $ADO_u
+    $connector = Get-VisioMaster "Dynamic Connector" -Document $Connectors
+    $masterDomain = Get-VisioMaster "Domain" -Document $ADO_u
+    $masterGPO = Get-VisioMaster "Policy" -Document $ADO_u
+}
+catch {
+    Write-Error "Error getting the Visio shapes $_"
+    Read-Host "Press any key to exit"
+    exit
+}
 
-#Gather our shapes from Visio's stencils
-$ADO_u = Open-VisioDocument "ADO_U.vss"
-$connectors = Open-VisioDocument "Connectors.vss"
-$masterOU = Get-VisioMaster "Organizational Unit" -Document $ADO_u
-$connector = Get-VisioMaster "Dynamic Connector" -Document $Connectors
-$masterDomain = Get-VisioMaster "Domain" -Document $ADO_u
-$masterGPO = Get-VisioMaster "Policy" -Document $ADO_u
-
-#Create our first shape. This is the root domain node
-$n0 = New-VisioShape -Master $MasterDomain -Position $Point_1_1
-#Set shape properties
-$n0.Text = $DNSDomain
-$n0.Name = "n" + $DNSDomain
+try {
+    #Create our first shape. This is the root domain node
+    $n0 = New-VisioShape -Master $MasterDomain -Position $Point_1_1
+    #Set shape properties
+    $n0.Text = $DNSDomain
+    $n0.Name = "n" + $DNSDomain
+}
+catch {
+    Write-Error "Error creating the root domain shape $_"
+    Read-Host "Press any key to exit"
+    exit
+}
 
 Write-Output "Getting the GPOs linked to the root domain $DNSDomain"
 #Get Root Domain linked GPOs and process them accordingly
-$RootGPOs = Get-ADObject -Server $DNSDomain -Identity (Get-ADDomain -Identity $DNSDomain).distinguishedName -Properties name, distinguishedName, gPLink, gPOptions
-#Loop through each root GPO
+try {
+    $RootGPOs = Get-ADObject -Server $DNSDomain -Identity (Get-ADDomain -Identity $DNSDomain).distinguishedName -Properties name, distinguishedName, gPLink, gPOptions
+    
+}
+catch {
+    Write-Error "Error getting the GPOs linked to the root domain $DNSDomain $_"
+    Read-Host "Press any key to exit"
+    exit
+}#Loop through each root GPO
 Write-Output "Creating the GPO shapes and connecting them to the root domain"
 ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[") {
     #Add to our counters (for naming)
@@ -103,8 +140,14 @@ ForEach ($gpolink in $RootGPOs.gPlink -split "\]\[") {
     #get only the GUID of the gpo
     $gpoGUID = ([Regex]::Match($gpoLink, '{[a-zA-Z0-9]{8}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{12}}')).Value 
     #pull details for the GPO based on the GUID
-    $gpo = Get-GPO -Guid $gpoGUID -Domain $DNSDomain
-
+    try {
+        $gpo = Get-GPO -Guid $gpoGUID -Domain $DNSDomain
+    }
+    catch {
+        Write-Warning "Error getting the GPO with GUID $gpoGUID $_"
+        Write-Warning "Skipping this GPO"
+        Continue
+    }
     #declare what we'll call the gpo shape 
     $shapename = "g" + $gpoCount 
     #Create the GPO shape
@@ -220,7 +263,14 @@ ForEach ($ou in $OUs) {
             #get only the GUID of the gpo
             $gpoGUID = ([Regex]::Match($gpoLink, '{[a-zA-Z0-9]{8}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{4}[-][a-zA-Z0-9]{12}}')).Value
             #Create the GPO shape
-            $gpo = Get-GPO -Guid $gpoGUID -Domain $DNSDomain
+            try {
+                $gpo = Get-GPO -Guid $gpoGUID -Domain $DNSDomain
+            }
+            catch {
+                Write-Warning "Error getting the GPO with GUID $gpoGUID $_"
+                Write-Warning "Skipping this GPO"
+                Continue
+            }
 
             #declare what we'll call the gpo shape 
             $shapename = "g" + $gpoCount
@@ -269,33 +319,42 @@ ForEach ($ou in $OUs) {
     }
 }
 
-Write-Output "Formatting the Visio Page"
-#Create a new layout object
-$ls = New-Object VisioAutomation.Models.LayoutStyles.hierarchyLayoutStyle
-#set object properties (this is how we format the page)
-$ls.AvenueSizeX = 1
-$ls.AvenueSizeY = 1
-$ls.LayoutDirection = "ToptoBottom"
-$ls.ConnectorStyle = "Simple"
-$ls.ConnectorAppearance = "Straight"
-$ls.horizontalAlignment = "Left"
 
-#Apply the layout object to the page
-Format-VisioPage -LayoutStyle $ls 
-
-#Change the page's size to match the new data
-Format-VisioPage -FitContents -BorderWidth 1.0 -BorderHeight 1.0
-
-#This section is to set text for the GPO shapes based on the length of the line. We had to move the shapes around first before we could run this part.
-#Create a new Shape Cell Object
-$con_cells = New-VisioShapeCells
-#Set the location of the text based on the length of the line
-$con_cells.TextFormPinX = "=POINTALONGPATH(Geometry1.Path,1)"
-$con_cells.TextFormPinY = "=POINTALONGPATH(Geometry1.Path,.75)"
-#Get all gpo connections
-$gpoShapes = Get-VisioShape -Name * | Where-Object {$_.Nameu -like "gcon*"}
-#Loop through each connection
-ForEach($shape in $gpoShapes) {
-    #Set the shape from the shape cell object
-    Set-VisioShapeCells -Cells $con_cells -Shape $shape   
+try {
+    Write-Output "Formatting the Visio Page"
+    #Create a new layout object
+    $ls = New-Object VisioAutomation.Models.LayoutStyles.hierarchyLayoutStyle
+    #set object properties (this is how we format the page)
+    $ls.AvenueSizeX = 1
+    $ls.AvenueSizeY = 1
+    $ls.LayoutDirection = "ToptoBottom"
+    $ls.ConnectorStyle = "Simple"
+    $ls.ConnectorAppearance = "Straight"
+    $ls.horizontalAlignment = "Left"
+    
+    #Apply the layout object to the page
+    Format-VisioPage -LayoutStyle $ls 
+    
+    #Change the page's size to match the new data
+    Format-VisioPage -FitContents -BorderWidth 1.0 -BorderHeight 1.0
+    
+    #This section is to set text for the GPO shapes based on the length of the line. We had to move the shapes around first before we could run this part.
+    #Create a new Shape Cell Object
+    $con_cells = New-VisioShapeCells
+    #Set the location of the text based on the length of the line
+    $con_cells.TextFormPinX = "=POINTALONGPATH(Geometry1.Path,1)"
+    $con_cells.TextFormPinY = "=POINTALONGPATH(Geometry1.Path,.75)"
+    #Get all gpo connections
+    $gpoShapes = Get-VisioShape -Name * | Where-Object {$_.Nameu -like "gcon*"}
+    #Loop through each connection
+    ForEach($shape in $gpoShapes) {
+        #Set the shape from the shape cell object
+        Set-VisioShapeCells -Cells $con_cells -Shape $shape   
+    }
+    Write-Output "Visio Page formatted"
+    Write-Output "Visio Document created"
+}
+catch {
+    Write-Warning "Error formatting the Visio page $_"
+    Write-Output "Unless there were errors, the Visio document should be created, but may not be formatted correctly"
 }
