@@ -2,7 +2,8 @@
 Exports AD OUs and GPOs to a Visio Map
 
 # Version 1.1
-Editor : Kyle Schuler
+Editor : Kyle Schuler </br>
+Original Author: tcox8
 
 # Requirements
 RSAT tools for Active Directory and GPO. </br>
