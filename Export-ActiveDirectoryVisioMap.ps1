@@ -113,9 +113,8 @@ $gpoCount = 0
 $DNSDomain = $env:USERDNSDOMAIN 
 
 if($null -eq $DNSDomain) {
-    Write-Error "Unable to get the DNS Domain. Please ensure you are logged in to a domain joined computer, or have your default domain set"
-    Read-Host "Press any key to exit"
-    exit
+    Write-Warning "Unable to get the DNS Domain. Please ensure you are logged in to a domain joined computer, or have your default domain set"
+    Read-Host "Press any key to continue"
 }
 
 Write-Output "Getting the OUs from the domain $DNSDomain"
